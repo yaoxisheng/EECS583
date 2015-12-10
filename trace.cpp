@@ -101,7 +101,7 @@ VOID Trace(TRACE trace, VOID *v)
         
         for ( INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins = INS_Next(ins))
         {
-            traceString +=  "%" + INS_Disassemble(ins) + "\n";
+            traceString +=  "%" + INS_Disassemble(ins) + "?" + LEVEL_BASE::StringFromAddrint(LEVEL_PINCLIENT::INS_Address(ins)).substr(6) + "\n";
         }
         
 
@@ -123,20 +123,18 @@ VOID Trace(TRACE trace, VOID *v)
             string m = "@" + decstr(count_trace) + "\n";
             TraceFile.write(m.c_str(), m.size());
 
-            //char *tgtAddr = new char[14];
+
             INS ins = BBL_InsHead(bbl);
             ADDRINT addr = LEVEL_PINCLIENT::INS_Address(ins);
-            string tgtAddr = LEVEL_BASE::StringFromAddrint(addr) + '\n';
-            //sprintf(tgtAddr, "%p\n", (VOID *) addr);            
-            TraceFile.write(tgtAddr.substr(6).c_str(), tgtAddr.size() - 6);
+            string tgtAddr = "$" + LEVEL_BASE::StringFromAddrint(addr).substr(6) + '\n';           
+            TraceFile.write(tgtAddr.c_str(), tgtAddr.size());
 
             TraceFile.write(traceString.c_str(), traceString.size());
 
             ins = BBL_InsTail(bbl);
             addr = LEVEL_PINCLIENT::INS_Address(ins);
-            tgtAddr = LEVEL_BASE::StringFromAddrint(addr) + '\n';
-            //sprintf(tgtAddr, "%p\n", (void *) &ins);
-            TraceFile.write(tgtAddr.substr(6).c_str(), tgtAddr.size() - 6); 
+            tgtAddr = "*" + LEVEL_BASE::StringFromAddrint(addr).substr(6) + ' ' + INS_Disassemble(ins)+ '\n';
+            TraceFile.write(tgtAddr.c_str(), tgtAddr.size()); 
             
             // at run time, just print the id
             string *s = new string(decstr(count_trace) + "\n");
