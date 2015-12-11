@@ -5,19 +5,19 @@ threshold = 50
 
 def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBLMap):
     newTrace = []
-    newTraceSet = Set([])
+    traceBBLTgt = Set([])
     prev = start
     for branchId in range(old, len(history_buffer)):
-        for inst in range(len(bbls[history_buffer[branchId]])):
-            while inst not in code_cache:
-                newTrace.append(inst)
-                newTraceSet.add(inst)
-            if bbls[history_buffer[branchId]][-1] in newTraceSet:
-                break
+        if prev not in code_cache:
+            exitCodeCacheSet |= nextBBLMap[prev]
+            newTrace.append(branchId)
+            traceBBLTgt.add(prev)
+            #for inst in range(len(bbls[history_buffer[branchId]])):
+            #    newTraceSet.add(inst)
+        if bbls[history_buffer[branchId]][-1] in traceBBLTgt:
+            break
         prev = bbls[history_buffer[branchId]][-1]
     code_cache[start] = newTrace
-    for index in nextBBLMap:
-
 
 
 
