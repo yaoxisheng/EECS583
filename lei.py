@@ -3,11 +3,25 @@
 threshold = 50
 
 
-def form_trace(history_buffer, tgt, old):
+def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBLMap):
+    newTrace = []
+    newTraceSet = Set([])
+    prev = start
+    for branchId in range(old, len(history_buffer)):
+        for inst in range(len(bbls[history_buffer[branchId]])):
+            while inst not in code_cache:
+                newTrace.append(inst)
+                newTraceSet.add(inst)
+            if bbls[history_buffer[branchId]][-1] in newTraceSet:
+                break
+        prev = bbls[history_buffer[branchId]][-1]
+    code_cache[start] = newTrace
+    for index in nextBBLMap:
 
 
 
-def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src, tgt, exitCodeCacheSet):
+
+def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src, tgt, exitCodeCacheSet, nextBBLMap):
     if tgt in code_cache:
         return
     if tgt in hb_hash:
@@ -16,7 +30,7 @@ def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src,
         if int(tgt, 16) <= int(src, 16) or old in exitCodeCacheSet:
             countMap[tgt] += 1
             if countMap[tgt] == threshold:
-                form_trace(history_buffer, tgt, old)
+                form_trace(history_buffer, tgt, old, code_cache, exitCodeCacheSet, nextBBLMap)
                 del history_buffer[old:]
                 del countMap[tgt]
     else:
@@ -32,6 +46,7 @@ def read_output(fileName):
     code_cache = {}
     nextBBLMap = {}
     countMap = {}
+    exitCodeCacheSet = Set([])
     for line in f:
         if line.startswith('@'):
             bbl = []
@@ -47,7 +62,7 @@ def read_output(fileName):
                 bNumber = history_buffer[-1]
                 history_buffer.append(int(line))
                 if bbls[bNumber][-1] != bbl[0]:
-                    interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[bNumber][-2], bbls[bNumber][-1])
+                    interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[bNumber][-2], bbls[bNumber][-1], exitCodeCacheSet, nextBBLMap)
             else:
                 history_buffer.append(int(line))
     f.close()
