@@ -1,6 +1,6 @@
 from sets import Set
 
-threshold = 50
+threshold = 1
 
 
 def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBLMap, bbls):
@@ -14,24 +14,23 @@ def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBL
                 exitCodeCacheSet |= Set(nextBBLMap[prev])
             newTrace.append(branchId)
             traceBBLTgt.add(prev)
-            #for inst in range(len(bbls[history_buffer[branchId]])):
-            #    newTraceSet.add(inst)
         if bbls[history_buffer[branchId]][-1] in traceBBLTgt:
             break
         prev = bbls[history_buffer[branchId]][-1]
     code_cache[start] = newTrace
+    #print start
 
 
 
-def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src, tgt, exitCodeCacheSet, nextBBLMap, bbls):
+def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src, tgt, exitCodeCacheSet, nextBBLMap, bbls, bblInCache):
     if tgt in code_cache:
-        return
+        bblInCache[0] += 1
+        return code_cache[tgt][1:]
+    print tgt
     if tgt in hb_hash:
         old = hb_hash[tgt]
         hb_hash[tgt] = len(history_buffer)-1
-        #print tgt
         if int(tgt, 16) <= int(src, 16) or old in exitCodeCacheSet:
-            #print "startCount"
             if tgt not in countMap:
                 countMap[tgt] = 0
             countMap[tgt] += 1
@@ -41,18 +40,28 @@ def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src,
                 del countMap[tgt]
     else:
         hb_hash[tgt] = len(history_buffer)-1
+    return []
 
 def read_output(fileName):
     f = open(fileName, 'r')
     bbls = []
     bbl = []
     bbls.append(bbl)
+    #list of indexes of bbl
     history_buffer = []
+    #tgt address -> index of bbl
     hb_hash = {}
+    #tgt address -> list of indexes of bbl
     code_cache = {}
+    #index of bbl -> list of indexes
     nextBBLMap = {}
+    #tgt address -> count
     countMap = {}
+    #index of bbl
     exitCodeCacheSet = Set([])
+    currentTrace = []
+    bblInCache = [0]
+    totalBbl = 0
     for line in f:
         line = line.rstrip('\n')
         if line.startswith('@'):
@@ -64,19 +73,24 @@ def read_output(fileName):
             bbl.append(tgt)
             bbls.append(bbl)
         elif line.isdigit():
+            totalBbl += 1
+            if len(currentTrace)>0 and currentTrace[0]==int(line):
+                bblInCache[0] += 1
+                del currentTrace[0]
+                continue;
             if len(history_buffer)>1:
                 if history_buffer[-1] not in nextBBLMap:
                     nextBBLMap[history_buffer[-1]] = []
                 nextBBLMap[history_buffer[-1]].append(int(line))
                 bNumber = history_buffer[-1]
                 history_buffer.append(int(line))
-                #print bbls[bNumber][-1]
-                if bbls[bNumber][-1] != bbl[0] and bbls[bNumber][-1] and len(bbls[bNumber][-1])==12:
-                    interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[bNumber][-2], bbls[bNumber][-1], exitCodeCacheSet, nextBBLMap, bbls)
+                if bbls[bNumber][-1] == bbl[0] and bbls[bNumber][-1] and len(bbls[bNumber][-1])==12:
+                    currentTrace = interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[bNumber][-2], bbls[bNumber][-1], exitCodeCacheSet, nextBBLMap, bbls, bblInCache)
             else:
                 history_buffer.append(int(line))
     f.close()
-    print len(code_cache)
+    #print len(code_cache)
+    #print bblInCache[0]*1.0/totalBbl
 
 
 read_output('trace.out')
