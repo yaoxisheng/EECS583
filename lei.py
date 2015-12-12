@@ -9,11 +9,12 @@ def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBL
     prev = start
     #print old, '??', len(history_buffer)
     for branchId in range(old, len(history_buffer)):
-        if prev not in code_cache:
-            if history_buffer[branchId] in nextBBLMap:
-                exitCodeCacheSet |= Set(nextBBLMap[history_buffer[branchId]])
-            newTrace.append(history_buffer[branchId])
-            traceBBLTgt.add(prev)
+        if prev in code_cache:
+            break;
+        if history_buffer[branchId] in nextBBLMap:
+            exitCodeCacheSet |= Set(nextBBLMap[history_buffer[branchId]])
+        newTrace.append(history_buffer[branchId])
+        traceBBLTgt.add(prev)
         if bbls[history_buffer[branchId]][-1] in traceBBLTgt:
             break
         prev = bbls[history_buffer[branchId]][-1]
@@ -111,6 +112,11 @@ def read_output(fileName):
     print bblInCache[0]*1.0/totalBbl
     print numberOfCounters[0]
     print idealTraceNumber*1.0/hitNumber[0]
+    totalTraceLength = 0
+    for key, value in code_cache.iteritems():
+        totalTraceLength += len(value)
+    print totalTraceLength*1.0/len(code_cache)
+
 
 
 read_output('trace.out')
