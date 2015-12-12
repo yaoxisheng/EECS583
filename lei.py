@@ -26,7 +26,7 @@ def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src,
     if tgt in code_cache:
         bblInCache[0] += 1
         return code_cache[tgt][1:]
-    print tgt
+    #print tgt
     if tgt in hb_hash:
         old = hb_hash[tgt]
         hb_hash[tgt] = len(history_buffer)-1
@@ -78,19 +78,22 @@ def read_output(fileName):
                 bblInCache[0] += 1
                 del currentTrace[0]
                 continue;
+            else:
+                currentTrace = []
             if len(history_buffer)>1:
                 if history_buffer[-1] not in nextBBLMap:
                     nextBBLMap[history_buffer[-1]] = []
                 nextBBLMap[history_buffer[-1]].append(int(line))
                 bNumber = history_buffer[-1]
+                currentIndex = int(line)
                 history_buffer.append(int(line))
-                if bbls[bNumber][-1] == bbl[0] and bbls[bNumber][-1] and len(bbls[bNumber][-1])==12:
+                if bbls[bNumber][-1] == bbls[currentIndex][0] and bbls[bNumber][-1] and len(bbls[bNumber][-1])==12:
                     currentTrace = interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[bNumber][-2], bbls[bNumber][-1], exitCodeCacheSet, nextBBLMap, bbls, bblInCache)
             else:
                 history_buffer.append(int(line))
     f.close()
-    #print len(code_cache)
-    #print bblInCache[0]*1.0/totalBbl
+    print len(code_cache)
+    print bblInCache[0]*1.0/totalBbl
 
 
 read_output('trace.out')
