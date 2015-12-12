@@ -19,6 +19,7 @@ def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBL
             break
         prev = bbls[history_buffer[branchId]][-1]
     code_cache[start] = newTrace
+    exitCodeCacheSet.discard(history_buffer[old])
     #print start
     #print newTrace
     #print "-------------------"
@@ -45,6 +46,7 @@ def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src,
                 form_trace(history_buffer, tgt, old, code_cache, exitCodeCacheSet, nextBBLMap, bbls)
                 del history_buffer[old:]
                 del countMap[tgt]
+                del hb_hash[tgt]
                 bblInCache[0] += 1
                 hitNumber[0] += 1      
                 return code_cache[tgt][1:]
