@@ -1,37 +1,34 @@
 from sets import Set
+import time
 
 threshold = 50
+hitNumber = 0
 
 
 def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBLMap, bbls):
     newTrace = []
     traceBBLTgt = Set([])
     prev = start
-    #print old, '??', len(history_buffer)
     for branchId in range(old, len(history_buffer)):
-        if prev in code_cache:
-            break;
+        prev = bbls[history_buffer[branchId]][0]
+        if prev in code_cache or prev in traceBBLTgt:
+            break
         if history_buffer[branchId] in nextBBLMap:
-            exitCodeCacheSet |= Set(nextBBLMap[history_buffer[branchId]])
+            exitCodeCacheSet |= nextBBLMap[history_buffer[branchId]]
         newTrace.append(history_buffer[branchId])
         traceBBLTgt.add(prev)
-        if bbls[history_buffer[branchId]][-1] in traceBBLTgt:
-            break
-        prev = bbls[history_buffer[branchId]][-1]
     code_cache[start] = newTrace
     exitCodeCacheSet.discard(history_buffer[old])
-    #print start
-    #print newTrace
-    #print "-------------------"
+    return
 
 
 
-def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src, tgt, exitCodeCacheSet, nextBBLMap, bbls, bblInCache, numberOfCounters, hitNumber):
+def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src, tgt, exitCodeCacheSet, nextBBLMap, bbls, bblInCache):
+    global hitNumber
     if tgt in code_cache:
         bblInCache[0] += 1
-        hitNumber[0] += 1
+        hitNumber += 1
         return code_cache[tgt][1:]
-    #print tgt
     if tgt in hb_hash:
         old = hb_hash[tgt]
         hb_hash[tgt] = len(history_buffer)-1
@@ -39,7 +36,6 @@ def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src,
             return []
         if int(tgt, 16) <= int(src, 16) or old in exitCodeCacheSet:
             if tgt not in countMap:
-                numberOfCounters[0] += 1
                 countMap[tgt] = 0
             countMap[tgt] += 1
             if countMap[tgt] == threshold:
@@ -48,17 +44,17 @@ def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src,
                 del countMap[tgt]
                 del hb_hash[tgt]
                 bblInCache[0] += 1
-                hitNumber[0] += 1      
+                hitNumber += 1
                 return code_cache[tgt][1:]
     else:
         hb_hash[tgt] = len(history_buffer)-1
     return []
 
+
 def read_output(fileName):
     f = open(fileName, 'r')
-    bbls = []
     bbl = []
-    bbls.append(bbl)
+    bbls = [bbl]
     #list of indexes of bbl
     history_buffer = []
     #tgt address -> index of bbl
@@ -69,28 +65,29 @@ def read_output(fileName):
     nextBBLMap = {}
     #tgt address -> count
     countMap = {}
-    #number of counters of tgt address
-    numberOfCounters = [0]
     #index of bbl
     exitCodeCacheSet = Set([])
     currentTrace = []
     bblInCache = [0]
     totalBbl = 0
     idealTraceNumber = 0
-    hitNumber = [0]
+    timeInIsdigits = 0
     for line in f:
         line = line.rstrip('\n')
         if line.startswith('@'):
             bbl = []
-        elif line.startswith('%'):
-            bbl.append(line.split('?')[1])
-        elif line.startswith('*'):
-            tgt = line.split(' ')[2][2:]
-            bbl.append(tgt)
+            elements = line.split(' ')
+            bbl.append(elements[1])
+            bbl.append(elements[2])
+            bbl.append(elements[4][2:])
+            if elements[3]=='jmp' or elements[3]=='ret' or elements[3]=='call':
+                bbl[2] = '0'
             bbls.append(bbl)
         elif line.isdigit():
+            start_time = time.time()
             totalBbl += 1
-            if len(currentTrace)>0 and currentTrace[0]==int(line):
+            currentIndex = int(line)
+            if len(currentTrace)>0 and currentTrace[0]==currentIndex:
                 bblInCache[0] += 1
                 del currentTrace[0]
                 if len(currentTrace) == 0:
@@ -98,30 +95,31 @@ def read_output(fileName):
                 continue;
             else:
                 currentTrace = []
+            timeInIsdigits += time.time() - start_time
             if len(history_buffer)>1:
-                if history_buffer[-1] not in nextBBLMap:
-                    nextBBLMap[history_buffer[-1]] = []
-                nextBBLMap[history_buffer[-1]].append(int(line))
-                bNumber = history_buffer[-1]
-                currentIndex = int(line)
-                history_buffer.append(int(line))
-                if bbls[bNumber][-1] == bbls[currentIndex][0] and bbls[bNumber][-1] and len(bbls[bNumber][-1])==12:
-                    currentTrace = interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[bNumber][-2], bbls[bNumber][-1], exitCodeCacheSet, nextBBLMap, bbls, bblInCache, numberOfCounters, hitNumber)
+                prevIndex = history_buffer[-1]
+                if prevIndex not in nextBBLMap:
+                    nextBBLMap[prevIndex] = Set([])
+                nextBBLMap[prevIndex].add(currentIndex)
+                history_buffer.append(currentIndex)
+                if bbls[prevIndex][-1]=='0' or bbls[prevIndex][-1] == bbls[currentIndex][0]:
+                    currentTrace = interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[prevIndex][-2], bbls[currentIndex][0], exitCodeCacheSet, nextBBLMap, bbls, bblInCache)
             else:
-                history_buffer.append(int(line))
+                history_buffer.append(currentIndex)
     f.close()
-    print len(code_cache)
-    print bblInCache[0]*1.0/totalBbl
-    print numberOfCounters[0]
-    print idealTraceNumber*1.0/hitNumber[0]
+    print "trace number: " + str(len(code_cache))
+    print "bbl cover ratio: " + str(bblInCache[0]*1.0/totalBbl)
+    print "ideal trace ratio: "+str(idealTraceNumber*1.0/hitNumber)
     totalTraceLength = 0
     for key, value in code_cache.iteritems():
         totalTraceLength += len(value)
-    print totalTraceLength*1.0/len(code_cache)
+    print "average trace length(count in block): " + str(totalTraceLength*1.0/len(code_cache))
+    print("--- %s seconds in digits---" % timeInIsdigits)
 
 
-
+start_time1 = time.time()
 read_output('trace.out')
+print("--- %s seconds ---" % (time.time() - start_time1))
 
 
 
