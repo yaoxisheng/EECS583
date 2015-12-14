@@ -1,6 +1,6 @@
 from sets import Set
 import time
-
+import sys
 
 
 def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBLMap, bbls):
@@ -19,6 +19,8 @@ def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBL
     exitCodeCacheSet.discard(history_buffer[old])
     return
 
+    
+    
 
 '''
 def interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, src, tgt, exitCodeCacheSet, nextBBLMap, bbls, bblInCache, hitNumber):
@@ -88,7 +90,7 @@ def read_output(fileName):
             if totalBbl%10000000 == 0:
                 print totalBbl/10000000
             currentIndex = int(line)
-            if len(currentTrace)>0 and currentTrace[0]==currentIndex:
+            if len(currentTrace)>0 and bbls[currentTrace[0]][0]==bbls[currentIndex][0]:
                 bblInCache += 1
                 del currentTrace[0]
                 if len(currentTrace) == 0:
@@ -124,9 +126,10 @@ def read_output(fileName):
                             countMap[tgt] += 1
                             if countMap[tgt] == threshold:
                                 form_trace(history_buffer, tgt, old, code_cache, exitCodeCacheSet, nextBBLMap, bbls)
+                                for localIndex in range(old, len(history_buffer)):
+                                    hb_hash.pop(bbls[history_buffer[localIndex]][0], None)
                                 del history_buffer[old:]
                                 del countMap[tgt]
-                                del hb_hash[tgt]
                                 bblInCache += 1
                                 hitNumber += 1
                                 currentTrace = code_cache[tgt][1:]
@@ -142,13 +145,15 @@ def read_output(fileName):
     totalTraceLength = 0
     for key, value in code_cache.iteritems():
         totalTraceLength += len(value)
+        #print value
     print "average trace length(count in block): " + str(totalTraceLength*1.0/len(code_cache))
     #print("--- %s seconds in digits---" % timeInIsdigits)
 
+def main(argv):
+    start_time1 = time.time()
+    read_output(sys.argv[1])
+    print("--- %s seconds ---" % (time.time() - start_time1))
 
-start_time1 = time.time()
-read_output('trace.out')
-print("--- %s seconds ---" % (time.time() - start_time1))
-
-
+if __name__ == "__main__":
+   main(sys.argv)
 
