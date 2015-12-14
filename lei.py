@@ -85,6 +85,8 @@ def read_output(fileName):
         elif line.isdigit():
             #start_time = time.time()
             totalBbl += 1
+            if totalBbl%10000000 == 0:
+                print totalBbl/10000000
             currentIndex = int(line)
             if len(currentTrace)>0 and currentTrace[0]==currentIndex:
                 bblInCache += 1
@@ -106,7 +108,6 @@ def read_output(fileName):
                     #currentTrace = interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[prevIndex][-2], bbls[currentIndex][0], exitCodeCacheSet, nextBBLMap, bbls, bblInCache, hitNumber)
                     src = bbls[prevIndex][1]
                     tgt = bbls[currentIndex][0]
-
                     if tgt in code_cache:
                         bblInCache += 1
                         hitNumber += 1
