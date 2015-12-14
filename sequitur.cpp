@@ -11,10 +11,10 @@
 using namespace std;
 
 class Sequitur {
-private:
-	int OCCURRENCE_THRESHOLD = 3;
-	int WINDOW_SIZE = 500;
-	int WINDOW_LIMIT = 8000;
+private:	
+	int WINDOW_SIZE;
+	int OCCURRENCE_THRESHOLD;
+	//int WINDOW_LIMIT = 8000;
 
 	unordered_map<int, vector<int>> codeCache; // key: starting block of trace, val: trace
 	int hitBlock = 0;
@@ -96,11 +96,11 @@ private:
          	exit(0);
        	}
        	char buffer[1024];
-		string result;	
+		string result;
 		while (fgets(buffer, 1024, fp)) {
 			result += buffer;
 	    }
-	    pclose(fp);	    
+	    pclose(fp);
 	    return result;
 	}
 
@@ -127,7 +127,9 @@ private:
 		}			
 	}
 
-public:	
+public:
+	Sequitur(int windowSize, int occurrenceThreshold) : WINDOW_SIZE(windowSize), OCCURRENCE_THRESHOLD(occurrenceThreshold) {}
+
 	void process(string inputPath) {
 		ifstream ifs(inputPath);
 		string history, line;
@@ -143,9 +145,9 @@ public:
 				count = 0;
 				history.clear();
 				bbls.clear();
-				if (count2 == WINDOW_LIMIT) {
+				/*if (count2 == WINDOW_LIMIT) {
 					return;
-				}
+				}*/
 
 				//debugging output
 				if (count2 % 100 == 0) {
@@ -181,8 +183,8 @@ public:
 };
 
 int main (int argc, char* argv[]) {
-	string inputPath(argv[1]);	
-	Sequitur sequitur;
+	string inputPath(argv[1]), windowSize(argv[2]), occurrenceThreshold(argv[3]);	 
+	Sequitur sequitur(stoi(windowSize), stoi(occurrenceThreshold));
 	sequitur.process(inputPath);
 	//sequitur.printCodeCache();
 	cout << "result:" << endl;
