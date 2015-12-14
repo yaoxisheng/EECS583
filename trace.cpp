@@ -98,12 +98,12 @@ VOID Trace(TRACE trace, VOID *v)
     {
         string traceString = "";
 
-        
+        /*
         for ( INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins = INS_Next(ins))
         {
             traceString +=  "%" + INS_Disassemble(ins) + "?" + LEVEL_BASE::StringFromAddrint(LEVEL_PINCLIENT::INS_Address(ins)).substr(6) + "\n";
         }
-        
+        */
 
         // we try to keep the overhead small 
         // so we only insert a call where control flow may leave the current trace
@@ -120,10 +120,13 @@ VOID Trace(TRACE trace, VOID *v)
             count_trace++;
 
             // Write the actual trace once at instrumentation time
-            string m = "@" + decstr(count_trace) + "\n";
+            string m = "@" + decstr(count_trace) + " " + LEVEL_BASE::StringFromAddrint(LEVEL_PINCLIENT::INS_Address(BBL_InsHead(bbl))).substr(6)+ " ";
+            INS ins = BBL_InsTail(bbl);
+            ADDRINT addr = LEVEL_PINCLIENT::INS_Address(ins);
+            m += LEVEL_BASE::StringFromAddrint(addr).substr(6)+" "+ INS_Disassemble(ins)+"\n";
             TraceFile.write(m.c_str(), m.size());
 
-
+            /*
             INS ins = BBL_InsHead(bbl);
             ADDRINT addr = LEVEL_PINCLIENT::INS_Address(ins);
             string tgtAddr = "$" + LEVEL_BASE::StringFromAddrint(addr).substr(6) + '\n';           
@@ -135,7 +138,7 @@ VOID Trace(TRACE trace, VOID *v)
             addr = LEVEL_PINCLIENT::INS_Address(ins);
             tgtAddr = "*" + LEVEL_BASE::StringFromAddrint(addr).substr(6) + ' ' + INS_Disassemble(ins)+ '\n';
             TraceFile.write(tgtAddr.c_str(), tgtAddr.size()); 
-            
+            */
             // at run time, just print the id
             string *s = new string(decstr(count_trace) + "\n");
             INS_InsertCall(BBL_InsTail(bbl), IPOINT_BEFORE, AFUNPTR(docount),
