@@ -11,10 +11,9 @@
 using namespace std;
 
 class Sequitur {
-private:	
-	string INPUT_FILE = "bbls";
+private:
 	int OCCURRENCE_THRESHOLD = 3;
-	int WINDOW_SIZE = 500;
+	int WINDOW_SIZE = 50000;
 
 	unordered_map<int, vector<int>> codeCache; // key: starting block of trace, val: trace
 	int hitBlock = 0;
@@ -125,8 +124,8 @@ private:
 	}
 
 public:	
-	void process() {
-		ifstream ifs(INPUT_FILE);
+	void process(string inputPath) {
+		ifstream ifs(inputPath);
 		string history, line;
 		int count = 0, count2 = 0;
 		vector<int> bbls;
@@ -174,9 +173,11 @@ public:
 	}
 };
 
-int main () {
+int main (int argc, char* argv[]) {
+	string inputPath(argv[1]);
+	cout << inputPath << endl;
 	Sequitur sequitur;
-	sequitur.process();	
+	sequitur.process(inputPath);	
 	//sequitur.printCodeCache();
 	sequitur.printStats();
 }
