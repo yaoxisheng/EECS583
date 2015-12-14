@@ -1,7 +1,7 @@
 from sets import Set
 import time
 
-threshold = 50
+
 
 def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBLMap, bbls):
     newTrace = []
@@ -12,7 +12,7 @@ def form_trace(history_buffer, start, old, code_cache, exitCodeCacheSet, nextBBL
         if prev in code_cache or prev in traceBBLTgt:
         #if prev in traceBBLTgt:
             break
-        exitCodeCacheSet |= nextBBLMap[bblIndex]
+        exitCodeCacheSet |= nextBBLMap[bbls[bblIndex][0]]
         newTrace.append(bblIndex)
         traceBBLTgt.add(prev)
     code_cache[start] = newTrace
@@ -52,6 +52,7 @@ def read_output(fileName):
     f = open(fileName, 'r')
     bbl = []
     bbls = [bbl]
+    threshold = 50
     hitNumber = 0
     #list of indexes of bbl
     history_buffer = []
@@ -96,13 +97,14 @@ def read_output(fileName):
             #timeInIsdigits += time.time() - start_time
             if len(history_buffer)>1:
                 prevIndex = history_buffer[-1]
-                if prevIndex not in nextBBLMap:
-                    nextBBLMap[prevIndex] = Set([])
-                nextBBLMap[prevIndex].add(currentIndex)
+                prevStartAddr = bbls[prevIndex][0]
+                if prevStartAddr not in nextBBLMap:
+                    nextBBLMap[prevStartAddr] = Set([])
+                nextBBLMap[prevStartAddr].add(currentIndex)
                 history_buffer.append(currentIndex)
                 if bbls[prevIndex][-1]=='0' or bbls[prevIndex][-1] == bbls[currentIndex][0]:
                     #currentTrace = interpreted_branch_taken(countMap, hb_hash, code_cache, history_buffer, bbls[prevIndex][-2], bbls[currentIndex][0], exitCodeCacheSet, nextBBLMap, bbls, bblInCache, hitNumber)
-                    src = bbls[prevIndex][-2]
+                    src = bbls[prevIndex][1]
                     tgt = bbls[currentIndex][0]
 
                     if tgt in code_cache:
@@ -144,7 +146,7 @@ def read_output(fileName):
 
 
 start_time1 = time.time()
-read_output('ptrace.out')
+read_output('trace.out')
 print("--- %s seconds ---" % (time.time() - start_time1))
 
 
