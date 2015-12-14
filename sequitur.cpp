@@ -11,27 +11,16 @@
 using namespace std;
 
 class Sequitur {
-private:
-	unordered_map<int, vector<int>> codeCache; // key: starting block of trace, val: trace	
-	string file = "bbls";
-	int occurenceThreshold = 2;
-	int windowSize = 500;
+private:	
+	string INPUT_FILE = "bbls";
+	int OCCURRENCE_THRESHOLD = 3;
+	int WINDOW_SIZE = 500;
 
-	string runSequitur(string &history) {
-		string cmd = "echo \"" + history + "\" | ./sequitur -q -d -r -p -k " + to_string(occurenceThreshold);		
-		FILE *fp = popen(cmd.c_str(), "r");
-       	if(!fp){
-         	cerr << "Could not open pipe for output." << endl;
-         	exit(0);
-       	}
-       	char buffer[100];
-		string result;	
-		while (fgets(buffer, 100, fp)) {
-			result += buffer;
-	    }
-	    pclose(fp);	    
-	    return result;
-	}
+	unordered_map<int, vector<int>> codeCache; // key: starting block of trace, val: trace
+	int hitBlock = 0;
+	int totalBlock = 0;
+	int idealTrace = 0;
+	int totalTrace = 0;	
 
 	void updateCodeCache(string &history) {
 		string pattern = runSequitur(history);
@@ -96,42 +85,98 @@ private:
 		}
 	}
 
+	string runSequitur(string &history) {
+		string cmd = "echo \"" + history + "\" | ./sequitur -q -d -r -p -k " + to_string(OCCURRENCE_THRESHOLD);		
+		FILE *fp = popen(cmd.c_str(), "r");
+       	if(!fp){
+         	cerr << "Could not open pipe for output." << endl;
+         	exit(0);
+       	}
+       	char buffer[100];
+		string result;	
+		while (fgets(buffer, 100, fp)) {
+			result += buffer;
+	    }
+	    pclose(fp);	    
+	    return result;
+	}
+
+	void collectStats(vector<int> &bbls) {
+		int i = 0;
+		while (i < bbls.size()) {
+			if (codeCache.find(bbls[i]) != codeCache.end()) {				
+				vector<int> trace = codeCache[bbls[i]];
+				int idx = 0;
+				while (idx < trace.size() && i < bbls.size() && bbls[i] == trace[idx]) {
+					hitBlock++;
+					totalBlock++;
+					idx++;
+					i++;
+				}
+				if (idx == trace.size()) {
+					idealTrace++;
+				}
+				totalTrace++;
+			} else {
+				totalBlock++;
+				i++;
+			}
+		}			
+	}
+
 public:	
 	void process() {
-		ifstream ifs(file);
+		ifstream ifs(INPUT_FILE);
 		string history, line;
 		int count = 0, count2 = 0;
+		vector<int> bbls;
 		while (getline(ifs, line)) {
 			history += line + '\n';
+			bbls.push_back(stoi(line));
 			count++;
-			if (count == windowSize) {				
+			if (count == WINDOW_SIZE) {
+				collectStats(bbls);
 				updateCodeCache(history);
 				count = 0;
 				history.clear();
+				bbls.clear();
+
 				//debugging output
-				count2++;
-				cerr << count2 << endl;
-			}			
+				if (count2 % 100 == 0) {
+					cout << count2 << endl;
+					printStats();
+				}
+				count2++;						
+			}
 		}
 		ifs.close();
 	}
 
-	void printCodeCache() {
+	void printStats() {
+		cout << "bbl hit rate: " << double(hitBlock) / totalBlock * 100 << '%' << endl;
+		cout << "ideal trace rate: " << double(idealTrace) / totalTrace * 100 << '%' << endl;
 		int length = 0;
 		for (auto &p : codeCache) {
 			length += p.second.size();
-			/*for (int &num : p.second) {
+		}
+		cout << "average trace length: " << double(length) / codeCache.size() << endl;
+	}
+
+	void printCodeCache() {
+		cout << "code cache size: " << codeCache.size() << endl;
+		for (auto &p : codeCache) {			
+			cout << "trace: ";
+			for (int &num : p.second) {
 				cout << num << ' ';
 			}
-			cout << endl;*/
-		}
-		length /= codeCache.size();
-		cout << "average length: " << length << endl;
+			cout << endl;
+		}		
 	}
 };
 
 int main () {
 	Sequitur sequitur;
-	sequitur.process();
-	sequitur.printCodeCache();
+	sequitur.process();	
+	//sequitur.printCodeCache();
+	sequitur.printStats();
 }
