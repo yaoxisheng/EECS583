@@ -13,7 +13,8 @@ using namespace std;
 class Sequitur {
 private:
 	int OCCURRENCE_THRESHOLD = 3;
-	int WINDOW_SIZE = 50000;
+	int WINDOW_SIZE = 500;
+	int WINDOW_LIMIT = 8000;
 
 	unordered_map<int, vector<int>> codeCache; // key: starting block of trace, val: trace
 	int hitBlock = 0;
@@ -23,13 +24,14 @@ private:
 
 	void updateCodeCache(string &history) {
 		string pattern = runSequitur(history);
+		//cout << pattern << endl;
 		vector<string> patterns;
 		istringstream iss(pattern);
 		string line;
 		while (getline(iss, line)) {
 			//cout << line << endl;
 			patterns.push_back(line);
-		}		
+		}
 
 		unordered_map<int, vector<int>> patternMap;
 		for (int i = patterns.size() - 1; i > 0; i--) {
@@ -50,6 +52,8 @@ private:
 			}
 			//cout << endl;
 		}
+
+		//cout << "tracs: " << patternMap.size() << endl;
 		
 		map<int, vector<vector<int>>> orderedPatternMap;
 		for (auto &p : patternMap) {
@@ -91,9 +95,9 @@ private:
          	cerr << "Could not open pipe for output." << endl;
          	exit(0);
        	}
-       	char buffer[100];
+       	char buffer[1024];
 		string result;	
-		while (fgets(buffer, 100, fp)) {
+		while (fgets(buffer, 1024, fp)) {
 			result += buffer;
 	    }
 	    pclose(fp);	    
@@ -139,13 +143,16 @@ public:
 				count = 0;
 				history.clear();
 				bbls.clear();
+				if (count2 == WINDOW_LIMIT) {
+					return;
+				}
 
 				//debugging output
 				if (count2 % 100 == 0) {
 					cout << count2 << endl;
 					printStats();
 				}
-				count2++;						
+				count2++;
 			}
 		}
 		ifs.close();
@@ -174,10 +181,10 @@ public:
 };
 
 int main (int argc, char* argv[]) {
-	string inputPath(argv[1]);
-	cout << inputPath << endl;
+	string inputPath(argv[1]);	
 	Sequitur sequitur;
-	sequitur.process(inputPath);	
+	sequitur.process(inputPath);
 	//sequitur.printCodeCache();
+	cout << "result:" << endl;
 	sequitur.printStats();
 }
